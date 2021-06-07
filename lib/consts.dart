@@ -1,5 +1,5 @@
 String alphaTokenAddress = "0xa1faa113cbE53436Df28FF0aEe54275c13B40975";
-var alphaTokenAbi = [
+var alphaAbi = [
   {
     "anonymous": false,
     "inputs": [
