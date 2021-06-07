@@ -1,9 +1,7 @@
-
+import 'package:alpha/screens/balance_screen.dart';
+import 'package:alpha/utils/alpha_utils.dart';
+import 'package:ethereum_address/ethereum_address.dart';
 import 'package:flutter/material.dart';
-import 'package:web3dart/web3dart.dart';
-import 'consts.dart';
-import 'package:flutter/services.dart';
-import 'dart:convert';
 
 void main() {
   runApp(MyApp());
@@ -34,24 +32,41 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
   String _walletAddress;
+  final _formKey = GlobalKey<FormState>();
 
-  void _checkBalance() async {
-    String abi;
-    Web3Client ethClient;
-    Client httpClient;
+  void _checkBalanceAndStake() async {
+    String _balance;
+    String _stake;
 
-    ethClient = Web3Client(rpcUrl, httpClient);
-
-    abi = jsonEncode(alphaAbi);
-    print(_walletAddress);
-    var alphaTokenInst = DeployedContract(
-      ContractAbi.fromJson(abi, "AlphaToken"),
-      EthereumAddress.fromHex(alphaTokenAddress),
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.1,
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      ),
     );
 
-    ContractFunction getBalanceAmount = alphaTokenInst.function('balanceOf');
+    _stake = await getAlphaStake(walletAddress: _walletAddress);
+    _balance = await getAlphaBalance(walletAddress: _walletAddress);
+
+    // print(_stake);
+    // print(_balance);
+
+    Navigator.of(context).pop();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (BuildContext context) => BalanceScreen(
+          alphaBalance: _balance,
+          alphaStake: _stake,
+        ),
+      ),
+    );
   }
 
   @override
@@ -60,28 +75,44 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                decoration: InputDecoration(hintText: "Wallet Address"),
-                onChanged: (value) {
-                  _walletAddress = value;
-                },
-              ),
-            )
-            // Text(
-            //   '$_counter',
-            //   style: Theme.of(context).textTheme.headline4,
-            // ),
-          ],
+      body: Form(
+        key: _formKey,
+        child: Center(
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height,
+            child: Column(
+              children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextFormField(
+                    validator: (String val) {
+                      if (_walletAddress == null) {
+                        return "Please enter wallet address";
+                      }
+                      if (!isValidEthereumAddress(_walletAddress)) {
+                        return "Wallet address incorrect";
+                      } else {
+                        return null;
+                      }
+                    },
+                    autovalidate: true,
+                    decoration: InputDecoration(hintText: "Wallet Address"),
+                    onChanged: (value) {
+                      _walletAddress = value;
+                    },
+                  ),
+                )
+              ],
+            ),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _checkBalance,
+        onPressed: () {
+          if (_formKey.currentState.validate()) {
+            _checkBalanceAndStake();
+          }
+        },
         tooltip: 'Increment',
         child: Icon(Icons.done),
       ), // This trailing comma makes auto-formatting nicer for build methods.
